@@ -13,6 +13,7 @@ using PlayerRoles.PlayableScps.Scp939;
 using LabApi.Features.Wrappers;
 using PlayerRoles.PlayableScps.Scp096;
 using MERToolbox.API.Enums;
+using MERToolbox.API.Helpers;
 
 namespace MERToolbox
 {
@@ -26,6 +27,7 @@ namespace MERToolbox
             Scp939ClawAbilityPrefix.OnClawAttempted += OnScp939Attacked;
             Scp096AttackAbilityPostfix.OnSwingTriggered += OnScp096Attacked;
             ServerEvent.ExplosionSpawned += OnExplosionSpawned;
+            ServerEvent.RoundStarting += OnRoundStarting;
         }
 
         public static void Unregister()
@@ -34,8 +36,15 @@ namespace MERToolbox
             Scp939ClawAbilityPrefix.OnClawAttempted -= OnScp939Attacked;
             Scp096AttackAbilityPostfix.OnSwingTriggered -= OnScp096Attacked;
             ServerEvent.ExplosionSpawned -= OnExplosionSpawned;
+            ServerEvent.RoundStarting -= OnRoundStarting;
         }
 
+        private static void OnRoundStarting(RoundStartingEventArgs ev)
+        {
+            PrefabManager.RegisterPrefabs();
+            MERNukePatchFix.UnpatchOriginal();
+        }
+        
         private static void OnScp096Attacked(Scp096AttackAbility ev)
         {
             if (Physics.Raycast(ev.Owner.PlayerCameraReference.position + ev.Owner.PlayerCameraReference.forward, ev.Owner.PlayerCameraReference.forward, out RaycastHit hitInfo, 5, Mask))

@@ -7,6 +7,5 @@
         public abstract float AudibleDistance { get; set; }
         public abstract float SoundVolume { get; set; }
         public abstract bool Loop { get; set; }
-
     }
 }

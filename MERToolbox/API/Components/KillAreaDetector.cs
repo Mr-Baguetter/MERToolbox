@@ -1,4 +1,5 @@
 using LabApi.Features.Wrappers;
+using MERToolbox.API.Helpers;
 using UnityEngine;
 
 namespace MERToolbox.API.Components
@@ -21,7 +22,7 @@ namespace MERToolbox.API.Components
                     bool isInside = bounds.Contains(player.Position);
                     if (isInside)
                     {
-                        Logger.Debug($"{player.DisplayName} is inside a KillArea");
+                        LogManager.Debug($"{player.DisplayName} is inside a KillArea");
                         player.Kill();
                     }
                 }

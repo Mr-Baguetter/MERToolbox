@@ -14,32 +14,30 @@ namespace MERToolbox.API.Helpers
 
         public static void SpawnDoor(SchematicObject schematic)
         {
-            foreach (DoorData doorData in Plugin.Instance.Config.DoorData)
+            foreach (DoorData doorData in ConfigManager.DoorData.Where(d => d.FileName == schematic.Name))
             {
-                foreach (GameObject block in schematic.AttachedBlocks.ToArray())
+                SerializableDoor serializableDoor = new()
                 {
-                    if (block is null)
-                        continue;
-                    if (block.name != doorData.PrimitiveName)
-                        continue;
+                    DoorType = doorData.DoorType,
+                    RequiredPermissions = doorData.Permissions,
+                    IsOpen = doorData.IsOpen,
+                    IsLocked = doorData.IsLocked,
+                    RequireAll = doorData.RequireAllPermissions,
+                    Position = Vector3.zero,
+                    Rotation = Vector3.zero,
+                    Index = 1
+                };
 
-                    SerializableDoor serializableDoor = new()
-                    {
-                        DoorType = doorData.DoorType,
-                        RequiredPermissions = doorData.Permissions,
-                        IsOpen = doorData.IsOpen,
-                        IsLocked = doorData.IsLocked,
-                        RequireAll = doorData.RequireAllPermissions,
-                        Position = block.transform.position,
-                        Rotation = block.transform.rotation.eulerAngles,
-                        Index = 1
-                    };
-
-                    GameObject obj = serializableDoor.SpawnOrUpdateObject();
-                    DoorIDs.Add(obj, schematic);
-                    schematic._attachedBlocks.Add(obj);
-                    NetworkServer.Destroy(block);
-                }
+                GameObject obj = serializableDoor.SpawnOrUpdateObject();
+                doorData.GameObject = obj;
+                NetworkServer.UnSpawn(obj);
+                ConfigManager.CalculateWorldTransform(schematic.Position, schematic.Rotation, doorData.Position, doorData.Rotation, out Vector3 position, out Quaternion rotation);
+                obj.transform.position = position;
+                obj.transform.rotation = rotation;
+                DoorIDs.Add(obj, schematic);
+                NetworkServer.Spawn(obj);
+                LogManager.Debug($"Spawning Door at {obj.transform.position} - {schematic.Position} - {obj.transform.localPosition}");
+                schematic._attachedBlocks.Add(obj);
             }
         }
     }

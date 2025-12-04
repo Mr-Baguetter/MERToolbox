@@ -1,3 +1,4 @@
+
 namespace MERToolbox.API.Enums
 {
     public enum DamageTypes
