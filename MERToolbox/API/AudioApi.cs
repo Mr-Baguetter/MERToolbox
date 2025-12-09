@@ -3,6 +3,7 @@ using ProjectMER.Features.Objects;
 using MERToolbox.API.Data;
 using System.Collections.Generic;
 using System.IO;
+using MERToolbox.API.Helpers;
 using UnityEngine;
 
 namespace MERToolbox.API
@@ -18,7 +19,7 @@ namespace MERToolbox.API
         public void SetSoundLists(List<SoundList> soundLists)
         {
             SoundLists = soundLists ?? [];
-            Logger.Debug($"Set {SoundLists.Count} sound configurations in AudioApi");
+            LogManager.Debug($"Set {SoundLists.Count} sound configurations in AudioApi");
         }
         
         public static float Clamp(float? value, float min, float max)
@@ -30,7 +31,7 @@ namespace MERToolbox.API
         {
             if (SoundLists == null || SoundLists.IsEmpty())
             {
-                Logger.Error("SoundLists is null or empty.");
+                LogManager.Error("SoundLists is null or empty.");
                 return;
             }
 
@@ -43,16 +44,16 @@ namespace MERToolbox.API
                 {
                     if (SpawnedObject.name == soundList.PrimitiveName)
                     {
-                        Logger.Debug($"Audio API is enabled!");
+                        LogManager.Debug($"Audio API is enabled!");
 
                         if (string.IsNullOrEmpty(soundList.AudioPath))
                         {
-                            Logger.Error($"Audio path is null please fill out the config properly.");
+                            LogManager.Error($"Audio path is null please fill out the config properly.");
                             continue;
                         }
 
                         Vector3 Coords = SpawnedObject.transform.position;
-                        Logger.Debug($"Successfully loaded audio path {soundList.AudioPath}");
+                        LogManager.Debug($"Successfully loaded audio path {soundList.AudioPath}");
 
                         AudioPlayer audioPlayer = AudioPlayer.CreateOrGet($"Global_Audio_{soundList.PrimitiveName}", onIntialCreation: (p) =>
                         {
@@ -63,8 +64,8 @@ namespace MERToolbox.API
                         audioPlayer.AddClip($"sound_{soundList.PrimitiveName}", volume, soundList.Loop);
                         AudioClipStorage.LoadClip(soundList.AudioPath, $"sound_{soundList.PrimitiveName}");
 
-                        Logger.Debug($"Playing {Path.GetFileName(soundList.AudioPath)}");
-                        Logger.Debug($"Audio should have been played.");
+                        LogManager.Debug($"Playing {Path.GetFileName(soundList.AudioPath)}");
+                        LogManager.Debug($"Audio should have been played.");
                         if (AudioPlayers.ContainsKey(Schematic))
                             AudioPlayers[Schematic].Add(audioPlayer);
                         else

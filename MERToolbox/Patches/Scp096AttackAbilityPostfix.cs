@@ -1,4 +1,5 @@
 using HarmonyLib;
+using MERToolbox.API.Helpers;
 using PlayerRoles.PlayableScps.Scp096;
 
 namespace MERToolbox.Patches
@@ -25,7 +26,7 @@ namespace MERToolbox.Patches
             }
             catch (System.Exception ex)
             {
-                Logger.Error(ex);
+                LogManager.Error(ex.Message);
             }
         }
     }

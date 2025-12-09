@@ -1,5 +1,4 @@
 using InventorySystem;
-using InventorySystem.Items.Pickups;
 using InventorySystem.Items.ThrowableProjectiles;
 using LabApi.Features.Wrappers;
 using MEC;

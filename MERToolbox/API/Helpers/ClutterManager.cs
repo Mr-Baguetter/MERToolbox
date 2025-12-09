@@ -1,13 +1,18 @@
+using LabApi.Features.Wrappers;
+using MERToolbox.API.Data;
+using MERToolbox.API.Enums;
+using Mirror;
+using ProjectMER.Features.Objects;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using ProjectMER.Features.Objects;
 using UnityEngine;
-using Mirror;
-using ProjectMER.Features;
+using YamlDotNet.Core.Tokens;
+using Random = UnityEngine.Random;
 
 namespace MERToolbox.API.Helpers
 {
-    public static class ClutterManager
+    public class ClutterManager
     {
         /// <summary>
         /// Tracks the currently spawned clutter objects for each schematic.
@@ -18,7 +23,7 @@ namespace MERToolbox.API.Helpers
         /// <see cref="List{T}"/> of <see cref="SchematicObject"/> instances representing 
         /// the clutter objects spawned for that schematic.
         /// </value>
-        public static Dictionary<SchematicObject, List<SchematicObject>> ActiveClutter { get; set; } = [];
+        public static Dictionary<SchematicObject, List<GameObject>> ActiveClutter { get; set; } = [];
 
         /// <summary>
         /// Retrieves the list of active clutter objects associated with the specified schematic.
@@ -30,7 +35,7 @@ namespace MERToolbox.API.Helpers
         /// A <see cref="List{T}"/> of <see cref="SchematicObject"/> instances currently tracked
         /// for the given schematic. 
         /// </returns>
-        public static List<SchematicObject> GetActiveClutter(SchematicObject schematic) => ActiveClutter[schematic];
+        public static List<GameObject> GetActiveClutter(SchematicObject schematic) => ActiveClutter[schematic];
 
         /// <summary>
         /// Attempts to retrieve the list of active clutter objects associated with the specified schematic.
@@ -46,42 +51,55 @@ namespace MERToolbox.API.Helpers
         /// <c>true</c> if the schematic exists in <see cref="ActiveClutter"/> and the associated
         /// clutter list was retrieved; otherwise, <c>false</c>.
         /// </returns>
-        public static bool TryGetActiveClutter(SchematicObject schematic, out List<SchematicObject> clutter) => ActiveClutter.TryGetValue(schematic, out clutter);
+        public static bool TryGetActiveClutter(SchematicObject schematic, out List<GameObject> clutter) => ActiveClutter.TryGetValue(schematic, out clutter);
+
+        public static GameObject GetClutterPrefab(ClutterType type)
+        {
+            return type switch
+            {
+                ClutterType.SimpleBoxes => PrefabManager.SimpleBoxes,
+                ClutterType.PipesShort => PrefabManager.PipesShort,
+                ClutterType.BoxesLadder => PrefabManager.BoxesLadder,
+                ClutterType.TankSupportedShelf => PrefabManager.TankSupportedShelf,
+                ClutterType.AngledFences => PrefabManager.AngledFences,
+                ClutterType.HugeOrangePipes => PrefabManager.HugeOrangePipes,
+                ClutterType.PipesLongOpen => PrefabManager.PipesLong,
+                _ => throw new InvalidOperationException(),
+            };
+        }
 
         /// <summary>
         /// Adds clutter to a schematic. Clutter is defined by <see cref="Config.ClutterSchematics"/>
         /// </summary>
         /// <param name="schematic"></param>
         /// <param name="spawnedClutter"></param>
-        public static void GenerateClutter(SchematicObject schematic, out List<SchematicObject> spawnedClutter)
+        public static void GenerateClutter(SchematicObject schematic, out List<GameObject> spawnedClutter)
         {
             spawnedClutter = [];
-            if (!Plugin.Instance.Config.ClutterSchematics.TryGetValue(schematic.Name, out List<ClutterSchematic> clutterlist))
-                return;
-
-            List<GameObject> clutterAreas = schematic.AttachedBlocks.Where(b => b != null && Plugin.Instance.Config.ClutterAreaNames.Contains(b.name)).ToList();
-            foreach (GameObject block in clutterAreas)
+            foreach (ClutterSchematic clutter in ConfigManager.ClutterSchematics.Where(d => d.FileName == schematic.Name))
             {
-                Vector3 position = block.transform.position;
-                foreach (ClutterSchematic clutter in clutterlist)
+                if (Random.Range(0f, 100f) <= clutter.SpawnChance)
                 {
-                    if (Random.Range(0f, 100f) <= clutter.SpawnChance)
-                    {
-                        SchematicObject clutterObject = ObjectSpawner.SpawnSchematic(clutter.Name, position);
-                        if (clutterObject == null)
-                            continue;
+                    GameObject clutterPrefab = UnityEngine.Object.Instantiate(GetClutterPrefab(clutter.ClutterType));
+                    NetworkServer.UnSpawn(clutterPrefab);
+                    ConfigManager.CalculateWorldTransform(schematic.Position, schematic.Rotation, clutter.Position, clutter.Rotation, out Vector3 position, out Quaternion rotation);
+                    clutterPrefab.transform.rotation = rotation;
+                    clutterPrefab.transform.position = position;
+                    NetworkServer.Spawn(clutterPrefab);
+                    spawnedClutter.Add(clutterPrefab);
 
-                        clutterObject.Rotation = clutter.Rotation != Vector3.zero ? Quaternion.Euler(clutter.Rotation) : block.transform.rotation;
-                        spawnedClutter.Add(clutterObject);
-                        foreach (GameObject spawnedObject in clutterObject.AttachedBlocks.ToList())
-                        {
-                            if (spawnedObject == null)
-                                continue;
-
-                            spawnedObject.transform.SetParent(schematic.transform, true);
-                            schematic._attachedBlocks.Add(spawnedObject);
-                        }
-                    }
+                    /*
+                    GameObject clutterPrefab = UnityEngine.Object.Instantiate(GetClutterPrefab(clutter.ClutterType));
+                    NetworkServer.UnSpawn(clutterPrefab);
+                    clutter.GameObject = clutterPrefab;
+                    clutterPrefab.transform.SetParent(schematic.gameObject.transform);
+                    clutterPrefab.transform.localPosition = clutter.Position;
+                    clutterPrefab.transform.localRotation = Quaternion.Euler(clutter.Rotation);
+                    LogManager.Debug($"Spawning Clutter at {clutterPrefab.transform.position} - {schematic.Position} - {clutterPrefab.transform.localPosition}");
+                    LogManager.Debug($"{clutterPrefab.transform.localRotation} - {clutterPrefab.transform.localScale} - {clutterPrefab.isStatic} - {clutter.Position}");
+                    NetworkServer.Spawn(clutterPrefab);
+                    spawnedClutter.Add(clutterPrefab);
+                    */
                 }
             }
 
@@ -98,21 +116,8 @@ namespace MERToolbox.API.Helpers
             if (!ActiveClutter.TryGetValue(schematic, out var clutterList))
                 return;
 
-            foreach (SchematicObject clutter in clutterList)
-            {
-                if (clutter?.AttachedBlocks == null)
-                    continue;
-
-                foreach (GameObject go in clutter.AttachedBlocks.ToList())
-                {
-                    if (go == null)
-                        continue;
-                    
-                    NetworkServer.Destroy(go);
-                }
-
-                clutter.Destroy();
-            }
+            foreach (GameObject gameObject in clutterList.ToArray())
+                NetworkServer.Destroy(gameObject);
 
             ActiveClutter.Remove(schematic);
         }

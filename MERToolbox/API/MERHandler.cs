@@ -26,49 +26,59 @@ namespace MERToolbox.API
             MEREvent.SchematicDestroyed -= OnSchematicDestroyed;
         }
 
+        public static List<SchematicObject> LoadedSchematicObjects = [];
+
         private static void OnSchematicSpawned(SchematicSpawnedEventArgs ev)
         {
-            if (ev.Schematic == null || ev.Schematic.AttachedBlocks.IsEmpty())
+            if (ev.Schematic == null)
                 return;
 
+            LogManager.Debug(ev.Schematic.Name);
+            LoadedSchematicObjects.Add(ev.Schematic);
             DoorSpawner.SpawnDoor(ev.Schematic);
 
             if (Plugin.Instance.AudioApi.SoundLists.Count >= 1)
                 Plugin.Instance.AudioApi.PlayAudio(ev.Schematic);
 
-            ClutterManager.GenerateClutter(ev.Schematic, out List<SchematicObject> spawnedClutter);
-            spawnedClutter.ForEach(c => Logger.Debug($"Generated {c.Name} Clutter item to {ev.Schematic.Name} num: {ClutterManager.ActiveClutter[ev.Schematic].Count()}"));
+            ClutterManager.GenerateClutter(ev.Schematic, out List<GameObject> spawnedClutter);
+            if (Plugin.Instance.Config.Debug)
+            {
+                foreach (GameObject gameObject in spawnedClutter)
+                {
+                    LogManager.Debug($"Generated {gameObject.name} Clutter item to {ev.Schematic.Name} num: {ClutterManager.ActiveClutter[ev.Schematic].Count}");
+                }
+            }
 
             foreach (GameObject spawnedObject in ev.Schematic.AttachedBlocks)
             {
-                if (!Plugin.Instance.Config.TankData.IsEmpty())
+                if (!ConfigManager.TankData.IsEmpty())
                 {
-                    foreach (TankData tankData in Plugin.Instance.Config.TankData)
+                    foreach (TankData tankData in ConfigManager.TankData)
                     {
                         if (spawnedObject.name != tankData.PrimitiveName)
                             continue;
 
-                        Logger.Debug($"Added FluidTank to {spawnedObject.name} - {ev.Schematic.name}");
-                        spawnedObject.AddComponent<FluidTank>().Init(LabApi.Features.Wrappers.PrimitiveObjectToy.Get(spawnedObject.GetComponent<AdminToys.PrimitiveObjectToy>()), tankData);
+                        LogManager.Debug($"Added FluidTank to {spawnedObject.name} - {ev.Schematic.name}");
+                        spawnedObject.AddComponent<FluidTank>().Init(LabApi.Features.Wrappers.PrimitiveObjectToy.Get(spawnedObject.GetComponent<PrimitiveObjectToy>()), tankData);
                     }
                 }
 
-                if (!Plugin.Instance.Config.KillAreas.IsEmpty() && spawnedObject.TryGetComponent<PrimitiveObjectToy>(out var primitive))
+                if (!ConfigManager.KillAreas.IsEmpty() && spawnedObject.TryGetComponent<PrimitiveObjectToy>(out var primitive))
                 {
-                    foreach (KillArea killArea in Plugin.Instance.Config.KillAreas)
+                    foreach (KillArea killArea in ConfigManager.KillAreas)
                     {
                         if (spawnedObject.name != killArea.PrimitiveName)
                             continue;
 
                         LabApi.Features.Wrappers.PrimitiveObjectToy.Get(primitive).Flags = PrimitiveFlags.None;
-                        Logger.Debug($"Added KillArea to {spawnedObject.name} - {ev.Schematic.name}");
+                        LogManager.Debug($"Added KillArea to {spawnedObject.name} - {ev.Schematic.name}");
                         spawnedObject.AddComponent<KillAreaDetector>().Init(spawnedObject);
                     }
                 }
 
-                if (!Plugin.Instance.Config.TeleporterData.IsEmpty())
+                if (!ConfigManager.TeleporterData.IsEmpty())
                 {
-                    foreach (TeleporterData teleporter in Plugin.Instance.Config.TeleporterData)
+                    foreach (TeleporterData teleporter in ConfigManager.TeleporterData)
                     {
                         if (spawnedObject.name != teleporter.PrimitiveName)
                             continue;
@@ -85,11 +95,13 @@ namespace MERToolbox.API
 
         private static void OnSchematicDestroyed(SchematicDestroyedEventArgs ev)
         {
+            LoadedSchematicObjects.Remove(ev.Schematic);
             foreach (var door in DoorSpawner.DoorIDs)
             {
                 if (ev.Schematic == door.Value)
                     NetworkServer.Destroy(door.Key);
             }
+
             if (AudioApi.AudioPlayers.TryGetValue(ev.Schematic, out List<AudioPlayer> audioPlayers))
             {
                 foreach (AudioPlayer audioPlayer in audioPlayers)
