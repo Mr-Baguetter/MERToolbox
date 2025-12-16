@@ -1,5 +1,4 @@
 ﻿using AdminToys;
-using Mirror;
 using ProjectMER.Events.Arguments;
 using ProjectMER.Features.Objects;
 using MERToolbox.API.Components;
@@ -36,9 +35,10 @@ namespace MERToolbox.API
             LogManager.Debug(ev.Schematic.Name);
             LoadedSchematicObjects.Add(ev.Schematic);
             DoorSpawner.SpawnDoor(ev.Schematic);
-
-            if (Plugin.Instance.AudioApi.SoundLists.Count >= 1)
-                Plugin.Instance.AudioApi.PlayAudio(ev.Schematic);
+            CustomItemManager.TrySpawnItems(ev.Schematic);
+            CameraManager.SpawnCamera(ev.Schematic);
+            LockerManager.SpawnLockers(ev.Schematic);
+            Plugin.Instance.AudioApi.PlayAudio(ev.Schematic);
 
             ClutterManager.GenerateClutter(ev.Schematic, out List<GameObject> spawnedClutter);
             if (Plugin.Instance.Config.Debug)
@@ -96,16 +96,17 @@ namespace MERToolbox.API
         private static void OnSchematicDestroyed(SchematicDestroyedEventArgs ev)
         {
             LoadedSchematicObjects.Remove(ev.Schematic);
-            foreach (var door in DoorSpawner.DoorIDs)
-            {
-                if (ev.Schematic == door.Value)
-                    NetworkServer.Destroy(door.Key);
-            }
+            ClutterManager.RemoveClutter(ev.Schematic);
+            DoorSpawner.DestroyDoors(ev.Schematic);
+            CustomItemManager.DestoryItems(ev.Schematic);
+            CameraManager.DestroyCameras(ev.Schematic);
+            LockerManager.DestroyLockers(ev.Schematic);
 
             if (AudioApi.AudioPlayers.TryGetValue(ev.Schematic, out List<AudioPlayer> audioPlayers))
             {
                 foreach (AudioPlayer audioPlayer in audioPlayers)
                 {
+                    audioPlayer.RemoveAllClips();
                     audioPlayer.Destroy();
                 }
             }

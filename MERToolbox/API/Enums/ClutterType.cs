@@ -8,6 +8,7 @@ namespace MERToolbox.API.Enums
         TankSupportedShelf,
         AngledFences,
         HugeOrangePipes,
-        PipesLongOpen
+        PipesLongOpen,
+        BrokenElectricalBox
     }
 }

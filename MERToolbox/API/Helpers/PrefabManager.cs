@@ -1,4 +1,5 @@
 using System.Linq;
+using MapGeneration.Distributors;
 using MapGeneration.RoomConnectors;
 using Mirror;
 using UnityEngine;
@@ -14,12 +15,19 @@ namespace MERToolbox.API.Helpers
         public static GameObject AngledFences { get; set; }
         public static GameObject HugeOrangePipes { get; set; }
         public static GameObject PipesLong { get; set; }
+        public static GameObject BrokenElectricalBox { get; set; }
 
         public static void RegisterPrefabs()
         {
             int total = 0;
             foreach (GameObject value in NetworkClient.prefabs.Values.ToArray())
             {
+                if (value.name == "Broken Electrical Box Open Connector")
+                {
+                    BrokenElectricalBox = value;
+                    total++;
+                }
+
                 // Clutter Prefabs
                 if (value.GetComponent<SpawnableClutterConnector>())
                 {

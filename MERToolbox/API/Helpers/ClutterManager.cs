@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using YamlDotNet.Core.Tokens;
 using Random = UnityEngine.Random;
 
 namespace MERToolbox.API.Helpers
@@ -64,6 +63,7 @@ namespace MERToolbox.API.Helpers
                 ClutterType.AngledFences => PrefabManager.AngledFences,
                 ClutterType.HugeOrangePipes => PrefabManager.HugeOrangePipes,
                 ClutterType.PipesLongOpen => PrefabManager.PipesLong,
+                ClutterType.BrokenElectricalBox => PrefabManager.BrokenElectricalBox,
                 _ => throw new InvalidOperationException(),
             };
         }
@@ -82,24 +82,12 @@ namespace MERToolbox.API.Helpers
                 {
                     GameObject clutterPrefab = UnityEngine.Object.Instantiate(GetClutterPrefab(clutter.ClutterType));
                     NetworkServer.UnSpawn(clutterPrefab);
+                    clutter.GameObject = clutterPrefab;
                     ConfigManager.CalculateWorldTransform(schematic.Position, schematic.Rotation, clutter.Position, clutter.Rotation, out Vector3 position, out Quaternion rotation);
                     clutterPrefab.transform.rotation = rotation;
                     clutterPrefab.transform.position = position;
                     NetworkServer.Spawn(clutterPrefab);
                     spawnedClutter.Add(clutterPrefab);
-
-                    /*
-                    GameObject clutterPrefab = UnityEngine.Object.Instantiate(GetClutterPrefab(clutter.ClutterType));
-                    NetworkServer.UnSpawn(clutterPrefab);
-                    clutter.GameObject = clutterPrefab;
-                    clutterPrefab.transform.SetParent(schematic.gameObject.transform);
-                    clutterPrefab.transform.localPosition = clutter.Position;
-                    clutterPrefab.transform.localRotation = Quaternion.Euler(clutter.Rotation);
-                    LogManager.Debug($"Spawning Clutter at {clutterPrefab.transform.position} - {schematic.Position} - {clutterPrefab.transform.localPosition}");
-                    LogManager.Debug($"{clutterPrefab.transform.localRotation} - {clutterPrefab.transform.localScale} - {clutterPrefab.isStatic} - {clutter.Position}");
-                    NetworkServer.Spawn(clutterPrefab);
-                    spawnedClutter.Add(clutterPrefab);
-                    */
                 }
             }
 

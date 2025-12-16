@@ -10,10 +10,13 @@ namespace MERToolbox.API.Helpers
 {
     public class DoorSpawner
     {
-        public static Dictionary<GameObject, SchematicObject> DoorIDs { get; set; } = [];
+        public static Dictionary<SchematicObject, List<DoorData>> Doors { get; set; } = [];
 
         public static void SpawnDoor(SchematicObject schematic)
         {
+            if (!Doors.ContainsKey(schematic))
+                Doors[schematic] = [];
+
             foreach (DoorData doorData in ConfigManager.DoorData.Where(d => d.FileName == schematic.Name))
             {
                 SerializableDoor serializableDoor = new()
@@ -34,10 +37,22 @@ namespace MERToolbox.API.Helpers
                 ConfigManager.CalculateWorldTransform(schematic.Position, schematic.Rotation, doorData.Position, doorData.Rotation, out Vector3 position, out Quaternion rotation);
                 obj.transform.position = position;
                 obj.transform.rotation = rotation;
-                DoorIDs.Add(obj, schematic);
+                Doors[schematic].Add(doorData);
                 NetworkServer.Spawn(obj);
                 LogManager.Debug($"Spawning Door at {obj.transform.position} - {schematic.Position} - {obj.transform.localPosition}");
                 schematic._attachedBlocks.Add(obj);
+            }
+        }
+
+        public static void DestroyDoors(SchematicObject schematic)
+        {
+            if (!Doors.ContainsKey(schematic))
+                return;
+
+            foreach (DoorData data in Doors[schematic].ToArray())
+            {
+                schematic._attachedBlocks.Remove(data.GameObject);
+                NetworkServer.Destroy(data.GameObject);
             }
         }
     }

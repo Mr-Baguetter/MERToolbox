@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using MERToolbox.API.Enums;
 
-namespace MERToolbox.API.Data
+namespace MERToolbox.API.Data.SerializedData
 {
     public class SerializedBlock
     {

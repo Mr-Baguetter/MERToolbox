@@ -4,5 +4,9 @@ namespace MERToolbox.API.Enums
     {
         Door = 0,
         Clutter,
+        AudioPlayer,
+        CustomItemSpawner,
+        Camera,
+        Locker,
     }
 }

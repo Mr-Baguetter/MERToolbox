@@ -1,8 +1,13 @@
 ﻿using MERToolbox.API.Data;
+using MERToolbox.API.Data.SerializedData;
+using MERToolbox.API.Enums;
 using MERToolbox.API.Json;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using MERTAudioPlayer = MERToolbox.API.Data.AudioPlayer; 
+using UnityEngine;
+using MapGeneration.Distributors;
 
 namespace MERToolbox.API.Helpers
 {
@@ -33,7 +38,7 @@ namespace MERToolbox.API.Helpers
                         {
                             switch (block.BlockType)
                             {
-                                case Enums.BlockTypes.Door:
+                                case BlockTypes.Door:
                                     DoorData door = new()
                                     {
                                         Position = block.Position,
@@ -43,12 +48,16 @@ namespace MERToolbox.API.Helpers
                                         FileName = Path.GetFileNameWithoutExtension(fileName)
                                     };
                                     
-                                    door.DeserializeProperties(block.Properties);
-                                    ConfigManager.DoorData.Add(door);
-                                    LogManager.Info($"Loaded DoorData {Path.GetFileNameWithoutExtension(fileName)}");
+                                    if (door.TryDeserializeProperties(block.Properties))
+                                    {
+                                        ConfigManager.DoorData.Add(door);
+                                        LogManager.Info($"Loaded DoorData {Path.GetFileNameWithoutExtension(fileName)}");
+                                    }
+                                    else
+                                        LogManager.Error($"Failed to load DoorData {block.ObjectId} in {Path.GetFileNameWithoutExtension(fileName)}");
                                     break;
 
-                                case Enums.BlockTypes.Clutter:
+                                case BlockTypes.Clutter:
                                     ClutterSchematic schematic = new()
                                     {
                                         Position = block.Position,
@@ -59,9 +68,93 @@ namespace MERToolbox.API.Helpers
                                         FileName = Path.GetFileNameWithoutExtension(fileName)
                                     };
 
-                                    schematic.DeserializeProperties(block.Properties);
-                                    ConfigManager.ClutterSchematics.Add(schematic);
-                                    LogManager.Info($"Loaded ClutterData {Path.GetFileNameWithoutExtension(fileName)}");
+                                    if (schematic.TryDeserializeProperties(block.Properties))
+                                    {
+                                        ConfigManager.ClutterSchematics.Add(schematic);
+                                        LogManager.Info($"Loaded ClutterData {Path.GetFileNameWithoutExtension(fileName)}");
+                                    }
+                                    else
+                                        LogManager.Error($"Failed to load ClutterData {block.ObjectId} in {Path.GetFileNameWithoutExtension(fileName)}");
+                                    break;
+
+                                case BlockTypes.CustomItemSpawner:
+                                    CustomItemSpawn item = new()
+                                    {
+                                        FileName = Path.GetFileNameWithoutExtension(fileName),
+                                        Position = block.Position,
+                                        Rotation = block.Rotation,
+                                        ObjectId = block.ObjectId,
+                                        ParentId = block.ParentId
+                                    };
+
+                                    if (item.TryDeserializeProperties(block.Properties))
+                                    {
+                                        ConfigManager.CustomItemSpawns.Add(item);
+                                        LogManager.Debug($"{block.Position}");
+                                        LogManager.Info($"Loaded CustomItem spawner {Path.GetFileNameWithoutExtension(fileName)}");
+                                    }
+                                    else
+                                        LogManager.Error($"Failed to load CustomItem spawner {block.ObjectId} in {Path.GetFileNameWithoutExtension(fileName)}");
+                                    break;
+
+                                case BlockTypes.AudioPlayer:
+                                    MERTAudioPlayer audio = new()
+                                    {
+                                        FileName = Path.GetFileNameWithoutExtension(fileName),
+                                        Position = block.Position,
+                                        Rotation = block.Rotation,
+                                        ObjectId = block.ObjectId,
+                                        ParentId = block.ParentId
+                                    };
+
+                                    if (audio.TryDeserializeProperties(block.Properties))
+                                    {
+                                        ConfigManager.AudioPlayers.Add(audio);
+                                        LogManager.Info($"Loaded AudioPlayer {Path.GetFileNameWithoutExtension(fileName)}");
+                                    }
+                                    else
+                                        LogManager.Error($"Failed to load AudioPlayer {block.ObjectId} in {Path.GetFileNameWithoutExtension(fileName)}");
+                                        
+                                    break;
+
+                                case BlockTypes.Camera:
+                                    CameraData camera = new()
+                                    {
+                                        FileName = Path.GetFileNameWithoutExtension(fileName),
+                                        Position = block.Position,
+                                        Rotation = block.Rotation,
+                                        ObjectId = block.ObjectId,
+                                        ParentId = block.ParentId
+                                    };
+
+                                    if (camera.TryDeserializeProperties(block.Properties))
+                                    {
+                                        ConfigManager.Cameras.Add(camera);
+                                        LogManager.Info($"Loaded Camera {Path.GetFileNameWithoutExtension(fileName)}");
+                                    }
+                                    else
+                                        LogManager.Error($"Failed to load Camera {block.ObjectId} in {Path.GetFileNameWithoutExtension(fileName)}");
+
+                                    break;
+
+                                case BlockTypes.Locker:
+                                    LockerData locker = new()
+                                    {
+                                        FileName = Path.GetFileNameWithoutExtension(fileName),
+                                        Position = block.Position,
+                                        Rotation = block.Rotation,
+                                        ObjectId = block.ObjectId,
+                                        ParentId = block.ParentId
+                                    };
+
+                                    if (locker.TryDeserializeProperties(block.Properties))
+                                    {
+                                        ConfigManager.Lockers.Add(locker);
+                                        LogManager.Info($"Loaded Locker {Path.GetFileNameWithoutExtension(fileName)}");
+                                    }
+                                    else
+                                        LogManager.Error($"Failed to load Locker {block.ObjectId} in {Path.GetFileNameWithoutExtension(fileName)}");
+                                    
                                     break;
                             }
                         }

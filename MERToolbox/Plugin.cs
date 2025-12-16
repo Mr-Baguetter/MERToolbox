@@ -1,6 +1,7 @@
 ﻿global using Logger = LabApi.Features.Console.Logger;
 using HarmonyLib;
 using LabApi.Loader.Features.Plugins;
+using LabApi.Loader.Features.Plugins.Enums;
 using MERToolbox.API;
 using MERToolbox.API.Helpers;
 using System;
@@ -15,7 +16,8 @@ namespace MERToolbox
         public override string Description => ":3";
         public override string Author => "Mr. Baguetter";
         public override Version RequiredApiVersion => LabApi.Features.LabApiProperties.CurrentVersion;
-        public override Version Version => new(1, 1, 0, 0);
+        public override Version Version => new(1, 2, 0, 0);
+        public override LoadPriority Priority => LoadPriority.Low;
         public static Plugin Instance;
         internal AudioApi AudioApi;
         internal Harmony _harmony;
@@ -29,14 +31,12 @@ namespace MERToolbox
 
             UnityDeserializer.Load("UnityData");
             ConfigManager.CreateAndLoad("KillAreaData");
-            ConfigManager.CreateAndLoad("SoundData");
             ConfigManager.CreateAndLoad("TankData");
             ConfigManager.CreateAndLoad("TeleporterData");
             ConfigManager.Create("Logs");
 
             LogManager.Info(LoadedAmount());
             
-            AudioApi.SetSoundLists(ConfigManager.AudioPathing);
             MERHandler.Register();
             Handler.Register();
         }
@@ -64,11 +64,14 @@ namespace MERToolbox
             AddIfAny("Doors", ConfigManager.DoorData.Count);
             AddIfAny("ClutterSchematics", ConfigManager.ClutterSchematics.Count);
             AddIfAny("KillAreas", ConfigManager.KillAreas.Count);
-            AddIfAny("AudioData", ConfigManager.AudioPathing.Count);
+            AddIfAny("AudioPlayers", ConfigManager.AudioPlayers.Count);
             AddIfAny("TankData", ConfigManager.TankData.Count);
             AddIfAny("Teleporters", ConfigManager.TeleporterData.Count);
+            AddIfAny("CustomItem Spawns", ConfigManager.CustomItemSpawns.Count);
+            AddIfAny("Cameras", ConfigManager.Cameras.Count);
+            AddIfAny("Lockers", ConfigManager.Lockers.Count);
 
-            return $"Loaded {string.Join(", ", parts)} ({ConfigManager.DoorData.Count + ConfigManager.ClutterSchematics.Count + ConfigManager.KillAreas.Count + ConfigManager.AudioPathing.Count + ConfigManager.TankData.Count + ConfigManager.TeleporterData.Count} Total files)";
+            return $"Loaded {string.Join(", ", parts)} ({ConfigManager.DoorData.Count + ConfigManager.ClutterSchematics.Count + ConfigManager.KillAreas.Count + ConfigManager.AudioPlayers.Count + ConfigManager.TankData.Count + ConfigManager.TeleporterData.Count + ConfigManager.CustomItemSpawns.Count + ConfigManager.Cameras.Count + ConfigManager.Lockers.Count} Total files)";
         }
     }
 }

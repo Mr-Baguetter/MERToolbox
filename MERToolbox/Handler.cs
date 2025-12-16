@@ -27,7 +27,7 @@ namespace MERToolbox
             Scp939ClawAbilityPrefix.OnClawAttempted += OnScp939Attacked;
             Scp096AttackAbilityPostfix.OnSwingTriggered += OnScp096Attacked;
             ServerEvent.ExplosionSpawned += OnExplosionSpawned;
-            ServerEvent.RoundStarting += OnRoundStarting;
+            ServerEvent.WaitingForPlayers += OnWaitingForPlayers;
         }
 
         public static void Unregister()
@@ -36,13 +36,13 @@ namespace MERToolbox
             Scp939ClawAbilityPrefix.OnClawAttempted -= OnScp939Attacked;
             Scp096AttackAbilityPostfix.OnSwingTriggered -= OnScp096Attacked;
             ServerEvent.ExplosionSpawned -= OnExplosionSpawned;
-            ServerEvent.RoundStarting -= OnRoundStarting;
+            ServerEvent.WaitingForPlayers -= OnWaitingForPlayers;
         }
 
-        private static void OnRoundStarting(RoundStartingEventArgs ev)
+        private static void OnWaitingForPlayers()
         {
             PrefabManager.RegisterPrefabs();
-            MERNukePatchFix.UnpatchOriginal();
+            CustomItemManager.Init(); 
         }
         
         private static void OnScp096Attacked(Scp096AttackAbility ev)

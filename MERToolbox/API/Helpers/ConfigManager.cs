@@ -10,12 +10,15 @@ namespace MERToolbox.API.Helpers
 {
     internal class ConfigManager
     {
-        public static List<SoundList> AudioPathing { get; set; } = [];
         public static List<KillArea> KillAreas { get; set; } = [];
         public static List<TankData> TankData { get; set; } = [];
         public static List<DoorData> DoorData { get; set; } = [];
         public static List<ClutterSchematic> ClutterSchematics { get; set; } = [];
         public static List<TeleporterData> TeleporterData { get; set; } = [];
+        public static List<CustomItemSpawn> CustomItemSpawns { get; set; } = [];
+        public static List<Data.AudioPlayer> AudioPlayers { get; set; } = [];
+        public static List<CameraData> Cameras { get; set; } = [];
+        public static List<LockerData> Lockers { get; set; } = [];
 
         internal static string Dir = Path.Combine(PathManager.Configs.ToString(), "MERToolbox");
 
@@ -59,15 +62,6 @@ namespace MERToolbox.API.Helpers
                             LogManager.Debug($"Loaded KillArea {killArea.PrimitiveName}");
                             break;
                         
-                        case "SoundData":
-                            SoundList soundData = YamlConfigParser.Deserializer.Deserialize<SoundList>(fileContent);
-                            if (soundData is null || string.IsNullOrEmpty(soundData.PrimitiveName))
-                                break;
-
-                            AudioPathing.Add(soundData);
-                            LogManager.Debug($"Loaded AudioData {soundData.PrimitiveName}");
-                            break;
-                        
                         case "TankData":
                             TankData tankData = YamlConfigParser.Deserializer.Deserialize<TankData>(fileContent);
                             if (tankData is null || string.IsNullOrEmpty(tankData.PrimitiveName))
@@ -101,24 +95,9 @@ namespace MERToolbox.API.Helpers
                 Directory.CreateDirectory(Path.Combine(Dir, name));
                 switch (name)
                 {
-                    case "DoorData":
-                        File.WriteAllText(Path.Combine(Dir, name, "DoorData.yml"), YamlConfigParser.Serializer.Serialize(new DoorData()));
-                        LogManager.Debug("Created DoorData directory");
-                        break;
-                        
-                    case "ClutterData":
-                        File.WriteAllText(Path.Combine(Dir, name, "ClutterSchematic.yml"), YamlConfigParser.Serializer.Serialize(new ClutterSchematic()));
-                        LogManager.Debug("Created Clutter directory");
-                        break;
-
                     case "KillAreaData":
                         File.WriteAllText(Path.Combine(Dir, name, "KillArea.yml"), YamlConfigParser.Serializer.Serialize(new KillArea()));
                         LogManager.Debug("Created KillArea directory");
-                        break;
-
-                    case "SoundData":
-                        File.WriteAllText(Path.Combine(Dir, name, "SoundList.yml"), YamlConfigParser.Serializer.Serialize(new SoundList()));
-                        LogManager.Debug("Created SoundData directory");
                         break;
 
                     case "TankData":

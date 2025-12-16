@@ -8,7 +8,9 @@ using Mirror;
 using ProjectMER.Features.Objects;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
+using MERTAudioPlayer = MERToolbox.API.Data.AudioPlayer;
 
 namespace MERToolbox.Commands.Admin
 {
@@ -28,15 +30,10 @@ namespace MERToolbox.Commands.Admin
                         continue;
 
                     ClutterManager.RemoveClutter(schematic);
-
-                    foreach (var doorEntry in DoorSpawner.DoorIDs.Where(d => d.Value == schematic).ToList())
-                    {
-                        LogManager.Debug("Destroying Door.");
-                        if (doorEntry.Key != null)
-                            NetworkServer.Destroy(doorEntry.Key);
-
-                        DoorSpawner.DoorIDs.Remove(doorEntry.Key);
-                    }
+                    DoorSpawner.DestroyDoors(schematic);
+                    CustomItemManager.DestoryItems(schematic);
+                    CameraManager.DestroyCameras(schematic);
+                    LockerManager.DestroyLockers(schematic);
 
                     foreach (GameObject obj in schematic.AttachedBlocks)
                     {
@@ -56,7 +53,10 @@ namespace MERToolbox.Commands.Admin
                     if (AudioApi.AudioPlayers.TryGetValue(schematic, out List<AudioPlayer> audioPlayers))
                     {
                         foreach (AudioPlayer audioPlayer in audioPlayers)
+                        {
+                            audioPlayer.RemoveAllClips();
                             audioPlayer.Destroy();
+                        }
 
                         AudioApi.AudioPlayers.Remove(schematic);
                     }
@@ -67,21 +67,30 @@ namespace MERToolbox.Commands.Admin
                 ConfigManager.KillAreas.Clear();
                 ConfigManager.TankData.Clear();
                 ConfigManager.TeleporterData.Clear();
-                ConfigManager.AudioPathing.Clear();
+                ConfigManager.CustomItemSpawns.Clear();
+                ConfigManager.AudioPlayers.Clear();
+                ConfigManager.Cameras.Clear();
+                ConfigManager.Lockers.Clear();
 
                 UnityDeserializer.Load("UnityData");
                 ConfigManager.CreateAndLoad("KillAreaData");
                 ConfigManager.CreateAndLoad("TankData");
                 ConfigManager.CreateAndLoad("TeleporterData");
-                ConfigManager.CreateAndLoad("SoundData");
 
                 foreach (SchematicObject schematic in MERHandler.LoadedSchematicObjects.ToArray())
                 {
                     DoorSpawner.SpawnDoor(schematic);
+                    CustomItemManager.TrySpawnItems(schematic);
                     ClutterManager.GenerateClutter(schematic, out _);
+                    CameraManager.SpawnCamera(schematic);
+                    LockerManager.SpawnLockers(schematic);
+                    Plugin.Instance.AudioApi.PlayAudio(schematic);
                 }
 
-                response = $"Successfully reloaded MERToolbox configuration. Respawn the Schematic to apply changes. \n {Plugin.LoadedAmount()}";
+                StringBuilder sb = new();
+                sb.AppendLine("Successfully reloaded MERToolbox configuration");
+                sb.AppendLine($"{Plugin.LoadedAmount()}");
+                response = sb.ToString();
                 return true;
             }
             catch (System.Exception ex)
