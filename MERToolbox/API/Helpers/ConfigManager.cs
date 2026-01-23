@@ -20,6 +20,8 @@ namespace MERToolbox.API.Helpers
         public static List<CameraData> Cameras { get; set; } = [];
         public static List<LockerData> Lockers { get; set; } = [];
 
+        public static string AudioPath { get; set; } = Path.Combine(PathManager.Configs.ToString(), "MERToolbox", "Audio");
+
         internal static string Dir = Path.Combine(PathManager.Configs.ToString(), "MERToolbox");
 
         public static string[] List(string localDir = "", string extension = "*.yml") =>

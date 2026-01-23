@@ -2,6 +2,7 @@
 using LabApi.Features.Permissions;
 using LabApi.Features.Wrappers;
 using MERToolbox.Commands.Admin;
+using ProjectMER.Commands.Map;
 using ProjectMER.Commands.Modifying.Position.SubCommands;
 using ProjectMER.Commands.Utility;
 using ProjectMER.Features.ToolGun;
@@ -11,6 +12,8 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Load = MERToolbox.Commands.Admin.Load;
+using Unload = MERToolbox.Commands.Admin.Unload;
 
 namespace MERToolbox.Commands.Base
 {
@@ -30,6 +33,8 @@ namespace MERToolbox.Commands.Base
             Subcommands.Add(new Reload());
             Subcommands.Add(new PrefabTest());
             Subcommands.Add(new SaveLogs());
+            Subcommands.Add(new Unload());
+            Subcommands.Add(new Load());
         }
 
         internal static List<SubCommandBase> Subcommands { get; } = [];

@@ -1,12 +1,13 @@
-﻿using MEC;
-using ProjectMER.Features.Objects;
+﻿using LabApi.Features.Wrappers;
+using MEC;
 using MERToolbox.API.Data;
+using MERToolbox.API.Helpers;
+using ProjectMER.Features.Objects;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using MERToolbox.API.Helpers;
 using UnityEngine;
 using MERTAudioPlayer = MERToolbox.API.Data.AudioPlayer;
-using System;
 
 namespace MERToolbox.API
 {
@@ -19,9 +20,9 @@ namespace MERToolbox.API
 
         public void PlayAudio(SchematicObject schematic)
         {
-            if (ConfigManager.AudioPlayers == null || ConfigManager.AudioPlayers.IsEmpty())
+            if (ConfigManager.AudioPlayers.IsEmpty())
             {
-                LogManager.Error("SoundLists is null or empty.");
+                LogManager.Error("No AudioPlayers are loaded.");
                 return;
             }
 
@@ -29,37 +30,76 @@ namespace MERToolbox.API
             {
                 if (schematic.Name == player.FileName)
                 {
-                    LogManager.Debug($"Audio API is enabled!");
-
-                    if (string.IsNullOrEmpty(player.AudioPath))
+                    if (player.AudioPath.Contains(".config/"))
                     {
-                        LogManager.Error($"Audio path is null please fill out the config properly.");
-                        continue;
+                        HandleFullPath(schematic, player);
                     }
-
-                    ConfigManager.CalculateWorldTransform(schematic.Position, schematic.Rotation, player.Position, player.Rotation, out Vector3 position, out Quaternion rotation);
-                    LogManager.Debug($"Successfully loaded audio path {player.AudioPath}");
-
-                    string guid = Guid.NewGuid().ToString();
-                    AudioPlayer audioPlayer = AudioPlayer.Create($"Global_Audio_{guid}", onIntialCreation: (p) =>
+                    else if (File.Exists(Path.Combine(Plugin.Instance.Config.AudioPath, player.AudioPath)))
                     {
-                        Speaker speaker = p.AddSpeaker("Main", position, isSpatial: true, maxDistance: player.AudibleDistance);
-                    });
-
-                    float volume = Clamp(player.Volume, 1f, 100f)/100;
-                    string clip = $"sound_{guid}";
-                    audioPlayer.AddClip(clip, volume, player.Loop);
-                    AudioClipStorage.LoadClip(player.AudioPath, $"Global_Audio_{guid}");
-                    player.Player = audioPlayer;
-
-                    LogManager.Debug($"Playing {Path.GetFileName(player.AudioPath)}");
-                    LogManager.Debug($"Audio should have been played.");
-                    if (AudioPlayers.ContainsKey(schematic))
-                        AudioPlayers[schematic].Add(audioPlayer);
+                        HandleFile(schematic, player, Path.Combine(Plugin.Instance.Config.AudioPath, player.AudioPath));
+                    }
                     else
-                        AudioPlayers.Add(schematic, [audioPlayer]);
+                        LogManager.Warn($"File does not exist at {player.AudioPath}");
                 }
             }
+        }
+
+        public void HandleFullPath(SchematicObject schematic, MERTAudioPlayer player)
+        {
+            LogManager.Debug("Audio API is enabled!");
+
+            ConfigManager.CalculateWorldTransform(schematic.Position, schematic.Rotation, player.Position, player.Rotation, out Vector3 position, out Quaternion rotation);
+            LogManager.Debug($"Successfully loaded audio path {player.AudioPath}");
+
+            string guid = Guid.NewGuid().ToString();
+            string clipName = $"sound_{guid}";
+            
+            AudioClipStorage.LoadClip(player.AudioPath, clipName);
+            AudioPlayer audioPlayer = AudioPlayer.Create($"{schematic.Name}_{guid}", onIntialCreation: (p) =>
+            {
+                Speaker speaker = p.AddSpeaker("Main", position, isSpatial: true, maxDistance: player.AudibleDistance);
+            });
+
+            float volume = Clamp(player.Volume, 1f, 100f)/100;
+            audioPlayer.AddClip(clipName, volume, player.Loop);
+            player.Player = audioPlayer;
+
+            LogManager.Debug($"Playing {Path.GetFileName(player.AudioPath)}");
+            if (AudioPlayers.ContainsKey(schematic))
+            {
+                AudioPlayers[schematic].Add(audioPlayer);                
+            }
+            else
+                AudioPlayers.Add(schematic, [audioPlayer]);
+        }
+
+        public void HandleFile(SchematicObject schematic, MERTAudioPlayer player, string path)
+        {
+            LogManager.Debug("Audio API is enabled!");
+
+            ConfigManager.CalculateWorldTransform(schematic.Position, schematic.Rotation, player.Position, player.Rotation, out Vector3 position, out Quaternion rotation);
+            LogManager.Debug($"Successfully loaded audio path {path}");
+
+            string guid = Guid.NewGuid().ToString();
+            string clipName = $"sound_{guid}";
+            
+            AudioClipStorage.LoadClip(path, clipName);
+            AudioPlayer audioPlayer = AudioPlayer.Create($"{schematic.Name}_{guid}", onIntialCreation: (p) =>
+            {
+                Speaker speaker = p.AddSpeaker("Main", position, isSpatial: true, maxDistance: player.AudibleDistance);
+            });
+
+            float volume = Clamp(player.Volume, 1f, 100f)/100;
+            audioPlayer.AddClip(clipName, volume, player.Loop);
+            player.Player = audioPlayer;
+
+            LogManager.Debug($"Playing {Path.GetFileName(path)}");
+            if (AudioPlayers.ContainsKey(schematic))
+            {
+                AudioPlayers[schematic].Add(audioPlayer);                
+            }
+            else
+                AudioPlayers.Add(schematic, [audioPlayer]);
         }
     }
 }

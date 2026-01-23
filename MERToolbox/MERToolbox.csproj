@@ -7,6 +7,7 @@
     <RootNamespace>MERToolbox</RootNamespace>
     <PlatformTarget>x64</PlatformTarget>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">

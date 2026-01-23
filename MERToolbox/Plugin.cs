@@ -16,7 +16,7 @@ namespace MERToolbox
         public override string Description => ":3";
         public override string Author => "Mr. Baguetter";
         public override Version RequiredApiVersion => LabApi.Features.LabApiProperties.CurrentVersion;
-        public override Version Version => new(1, 2, 0, 0);
+        public override Version Version => new(1, 2, 2, 0);
         public override LoadPriority Priority => LoadPriority.Low;
         public static Plugin Instance;
         internal AudioApi AudioApi;
@@ -34,11 +34,14 @@ namespace MERToolbox
             ConfigManager.CreateAndLoad("TankData");
             ConfigManager.CreateAndLoad("TeleporterData");
             ConfigManager.Create("Logs");
+            ConfigManager.Create("Audio");
 
             LogManager.Info(LoadedAmount());
             
             MERHandler.Register();
             Handler.Register();
+            Config.AudioPath = ConfigManager.AudioPath;
+            SaveConfig();
         }
 
         public override void Disable()

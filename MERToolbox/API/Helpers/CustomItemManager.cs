@@ -17,7 +17,7 @@ namespace MERToolbox.API.Helpers
         public static bool UCIInstalled { get; set; }
         public static bool LabApiCIInstalled { get; set; }
 
-        public static Assembly UCI { get; set; }
+        public static Assembly UCIAssembly { get; set; }
         public static Assembly LabApiAssembly { get; set; }
 
         public static Type ExiledPickupType { get; set; }
@@ -42,7 +42,7 @@ namespace MERToolbox.API.Helpers
                 if (plugin.Name is "UncomplicatedCustomItems")
                 {
                     plugin.TryGetLoadedAssembly(out Assembly assembly);
-                    UCI = assembly;
+                    UCIAssembly = assembly;
                     UCIInstalled = true;
                 }
             }
@@ -54,8 +54,8 @@ namespace MERToolbox.API.Helpers
             if (UCIInstalled)
             {
                 LogManager.Debug($"UCI Found!");
-                SummonedCustomItem = UCI?.GetType("UncomplicatedCustomItems.API.Features.SummonedCustomItem");
-                Utilities = UCI?.GetType("UncomplicatedCustomItems.API.Utilities");
+                SummonedCustomItem = UCIAssembly?.GetType("UncomplicatedCustomItems.API.Features.SummonedCustomItem");
+                Utilities = UCIAssembly?.GetType("UncomplicatedCustomItems.API.Utilities");
             }
 
             if (LabApiCIInstalled)
@@ -131,7 +131,7 @@ namespace MERToolbox.API.Helpers
                 return null;
             }
 
-            Type[] parameterTypes = [typeof(uint), typeof(Vector3), ExiledPickupType];
+            Type[] parameterTypes = [typeof(uint), typeof(Vector3), ExiledPickupType.MakeByRefType()];
             return ExiledCustomItemType.GetMethod("TrySpawn", BindingFlags.Static | BindingFlags.Public, null, parameterTypes, null);
         }
 
@@ -143,19 +143,19 @@ namespace MERToolbox.API.Helpers
                 return false;
 
             LogManager.Debug($"UCI found, checking if the item {id} exists...");
-
             try
             {
                 MethodInfo hasCustomItem = Utilities.GetMethod("IsCustomItem", BindingFlags.Public | BindingFlags.Static);
                 MethodInfo getCustomItem = Utilities.GetMethod("GetCustomItem", BindingFlags.Public | BindingFlags.Static);
 
                 if (hasCustomItem is not null && getCustomItem is not null)
+                {
                     if ((bool)hasCustomItem.Invoke(null, [id]))
                     {
                         customItem = getCustomItem.Invoke(null, [id]);
-
                         return customItem is not null;
                     }
+                }
 
                 return false;
             }
@@ -177,7 +177,7 @@ namespace MERToolbox.API.Helpers
             {
                 if (UCIHasCustomItem(id, out object customItem) && customItem is not null)
                 {
-                    SummonedCustomItem.GetConstructor([UCI.GetType("UncomplicatedCustomItems.API.Interfaces.ICustomItem"), typeof(Vector3), typeof(Quaternion)]).Invoke([customItem, pos, rot]);
+                    SummonedCustomItem.GetConstructor([UCIAssembly.GetType("UncomplicatedCustomItems.API.Interfaces.ICustomItem"), typeof(Vector3), typeof(Quaternion)]).Invoke([customItem, pos, rot]);
                     LogManager.Debug($"Spawned UCI CustomItem");
                 }
             }
@@ -198,23 +198,37 @@ namespace MERToolbox.API.Helpers
 
         public static void ExiledSpawnCustomItem(uint id, Vector3 pos, Quaternion rot)
         {
-            object[] parameters = [id, pos, null];
-            object customItem = ExiledSpawn.Invoke(null, parameters);
-            Type pickuptype = parameters[2].GetType();
-
-            if (pickuptype == ExiledPickupType)
+            if (ExiledSpawn == null || !ExiledInstalled)
             {
-                PropertyInfo serialProp = pickuptype.GetProperty("Rotation", BindingFlags.Public | BindingFlags.Instance);
-                serialProp.SetValue(customItem, rot);
-                
-                /*
-                object serialValue = serialProp.GetValue(customItem);
-                Pickup pickup = Pickup.Get((ushort)serialValue);
-                pickup.Rotation = rot;
-                */
+                LogManager.Error("Exiled is not installed or spawn method is null");
+                return;
             }
 
-            LogManager.Debug($"Spawned Exiled CustomItem");
+            try
+            {
+                object[] parameters = [id, pos, null];
+                bool success = (bool)ExiledSpawn.Invoke(null, parameters);
+                
+                if (success && parameters[2] != null)
+                {
+                    object pickupObj = parameters[2];
+                    Type pickupType = pickupObj.GetType();
+                    PropertyInfo rotationProp = pickupType.GetProperty("Rotation", BindingFlags.Public | BindingFlags.Instance);
+                    if (rotationProp != null)
+                    {
+                        rotationProp.SetValue(pickupObj, rot);
+                        LogManager.Debug($"Spawned Exiled CustomItem with rotation");
+                    }
+                    else
+                        LogManager.Warn("Could not find Rotation property on pickup");
+                }
+                else
+                    LogManager.Warn($"Failed to spawn Exiled CustomItem with ID: {id}");
+            }
+            catch (Exception e)
+            {
+                LogManager.Error($"Error spawning Exiled CustomItem: {e}");
+            }
         }
 
         /// <summary>
@@ -242,7 +256,7 @@ namespace MERToolbox.API.Helpers
             catch (Exception ex)
             {
                 LogManager.Debug($"Failed to load types from assembly '{assembly.FullName}': {ex.Message}");
-                return Array.Empty<Type>();
+                return [];
             }
         }
     }
